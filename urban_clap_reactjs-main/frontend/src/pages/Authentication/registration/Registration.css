@@ -1,0 +1,28 @@
+h1,
+p {
+  font-family: Lato;
+}
+.error {
+  position: absolute;
+  color: red;
+  font-size: 0.6rem;
+}
+.registration-form {
+  margin: 0% auto;
+  /* border: 1px solid; */
+  /* width: 150dvh; */
+  display: flex;
+  justify-content: space-around;
+  max-width: 1140px;
+  padding: 50px;
+}
+
+.blue {
+  background-color: #319fca;
+  color: #ffffff;
+  border: none;
+}
+
+.text-blue {
+  color: #319fca;
+}

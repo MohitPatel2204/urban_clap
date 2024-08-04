@@ -1,0 +1,7 @@
+<div className="d-flex">
+      <Sidebar />
+      <div className="header-for-page">
+        <ResponsiveAppBar />
+        <div>hello</div>
+      </div>
+    </div>
