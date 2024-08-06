@@ -1,0 +1,110 @@
+[8/6, 8:10 AM] Yash: # models.py (assuming these models)
+
+from django.db import models
+from django.contrib.auth.models import User
+
+class Service(models.Model):
+    name = models.CharField(max_length=255)
+    provider = models.ForeignKey(User, on_delete=models.CASCADE)
+
+class Appointment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
+    date = models.DateTimeField()
+[8/6, 8:10 AM] Yash: # Customer/views.py
+
+from rest_framework.decorators import action
+from django.utils.timezone import now
+from django.db.models import Count
+from rest_framework.response import Response
+
+class AppointmentViewSet(viewsets.ModelViewSet):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+
+    @action(detail=False, methods=['get'], url_path='top-service-providers')
+    def top_service_providers(self, request):
+        start_date = now().replace(day=1)  # Start of the current month
+        top_providers = Appointment.objects.filter(
+            date__gte=start_date
+        ).values('service__provider__username').annotate(
+            booking_count=Count('service')
+        ).order_by('-booking_count')[:10]
+       
+        return Response(top_providers)
+[8/6, 8:10 AM] Yash: # urban_clap/urls.py
+
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from Customer.views import AppointmentViewSet
+
+router = DefaultRouter()
+router.register(r'appointments', AppointmentViewSet)
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/', include(router.urls)),
+    path('ws/', include('Customer.routing')),
+]
+[8/6, 8:10 AM] Yash: // src/components/TopServiceProvidersChart.js
+
+import React, { useEffect, useState } from 'react';
+import { Bar } from 'react-chartjs-2';
+import axios from 'axios';
+
+const TopServiceProvidersChart = () => {
+    const [data, setData] = useState({ labels: [], datasets: [] });
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await axios.get('http://127.0.0.1:8000/api/appointments/top-service-providers/');
+                const labels = response.data.map(provider => provider.service__provider__username);
+                const bookingCounts = response.data.map(provider => provider.booking_count);
+               
+                setData({
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Number of Bookings',
+                            data: bookingCounts,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                        }
+                    ]
+                });
+            } catch (error) {
+                console.error('Error fetching top service providers:', error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    return (
+        <div>
+            <h2>Top 10 Service Providers</h2>
+            <Bar data={data} />
+        </div>
+    );
+};
+
+export default TopServiceProvidersChart;
+[8/6, 8:11 AM] Yash: // src/App.js
+
+import React from 'react';
+import TopServiceProvidersChart from './components/TopServiceProvidersChart';
+
+function App() {
+    return (
+        <div className="App">
+            <h1>Admin Dashboard</h1>
+            <TopServiceProvidersChart />
+        </div>
+    );
+}
+
+export default App;
+
+
