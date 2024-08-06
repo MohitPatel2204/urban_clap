@@ -1,0 +1,66 @@
+const { spawn } = require('child_process');
+
+const command = 'sqlcmd';
+const args = [
+  '-S', '1.1.1.1,800',
+  '-d', 'dumy',
+  '-Q', 'SELECT * FROM price WHERE created_at < GETDATE()',
+  '-o', 'dump/as.csv',
+  '-s', ',',
+  '-W'
+];
+
+const child = spawn(command, args);
+
+child.stdin.on('data', (data) => {
+  console.log(`stdin: ${data}`);
+});
+
+child.stdout.on('data', (data) => {
+  console.log(`stdout: ${data}`);
+});
+
+child.stderr.on('data', (data) => {
+  console.error(`stderr: ${data}`);
+});
+
+child.on('close', (code) => {
+  console.log(`child process exited with code ${code}`);
+});
+
+child.on('error', (err) => {
+  console.error(`error: ${err}`);
+});
+
+-----------------------------------------------
+
+
+const fs = require('fs');
+const { spawn } = require('child_process');
+
+const command = 'sqlcmd';
+const args = [
+  '-S', '1.1.1.1,800',
+  '-d', 'dumy',
+  '-Q', 'SELECT * FROM price WHERE created_at < GETDATE()',
+  '-o', 'dump/as.csv',
+  '-s', ',',
+  '-W'
+];
+
+const child = spawn(command, args);
+
+const outputFile = fs.createWriteStream('dump/as.csv');
+child.stdout.pipe(outputFile);
+
+child.stderr.on('data', (data) => {
+  console.error(`stderr: ${data}`);
+});
+
+child.on('close', (code) => {
+  console.log(`child process exited with code ${code}`);
+});
+
+child.on('error', (err) => {
+  console.error(`error: ${err}`);
+});
