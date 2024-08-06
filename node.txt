@@ -1,3 +1,10 @@
+no such file 
+
+const outputFile = fs.createWriteStream('./dump/as.csv');
+
+-------------------------------------------------------
+
+
 const { spawn } = require('child_process');
 
 const command = 'sqlcmd';
