@@ -1,0 +1,126 @@
+import React from 'react';
+import NotificationComponent from './components/NotificationComponent';
+
+function App() {
+    const serviceProviderId = 'your_service_provider_id_here'; // Replace with actual ID logic
+
+    return (
+        <div className="App">
+            <h1>Service Provider Dashboard</h1>
+            <NotificationComponent serviceProviderId={serviceProviderId} />
+        </div>
+    );
+}
+
+export default App;
+[8/6, 8:01 AM] Yash: // src/components/NotificationComponent.js
+
+import React, { useEffect, useState } from 'react';
+
+const NotificationComponent = ({ serviceProviderId }) => {
+    const [notifications, setNotifications] = useState([]);
+
+    useEffect(() => {
+        const socket = new WebSocket(`ws://127.0.0.1:8000/ws/notifications/${serviceProviderId}/`);
+
+        socket.onopen = () => {
+            console.log('WebSocket connection established.');
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            setNotifications(prev => [...prev, data.message]);
+        };
+
+        socket.onclose = () => {
+            console.log('WebSocket connection closed.');
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        return () => socket.close();
+    }, [serviceProviderId]);
+
+    return (
+        <div>
+            <h2>Notifications</h2>
+            <ul>
+                {notifications.map((notification, index) => (
+                    <li key={index}>{notification}</li>
+                ))}
+            </ul>
+        </div>
+    );
+};
+
+export default NotificationComponent;
+[8/6, 8:02 AM] Yash: # Customer/views.py
+
+from rest_framework import viewsets
+from .models import Appointment
+from .serializers import AppointmentSerializer
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+class AppointmentViewSet(viewsets.ModelViewSet):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        appointment = Appointment.objects.get(id=response.data['id'])
+        # Notify the specific service provider
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'service_provider_{appointment.service_provider.id}', {
+                'type': 'send_notification',
+                'message': f'New appointment booked by {appointment.user.username} for {appointment.service_provider.name} on {appointment.date}.'
+            }
+        )
+        return response
+[8/6, 8:02 AM] Yash: # Customer/routing.py
+
+from django.urls import path
+from .consumers import NotificationConsumer
+
+websocket_urlpatterns = [
+    path('ws/notifications/<str:service_provider_id>/', NotificationConsumer.as_asgi()),
+]
+[8/6, 8:02 AM] Yash: # Customer/consumers.py
+
+import json
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from .models import ServiceProvider
+
+class NotificationConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.service_provider_id = self.scope['url_route']['kwargs']['service_provider_id']
+        self.group_name = f'service_provider_{self.service_provider_id}'
+        
+        # Add this WebSocket connection to the group
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        # Remove this WebSocket connection from the group
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        message = data['message']
+
+        # Broadcast the message to the group
+        await self.channel_layer.group_send(
+            self.group_name,
+            {
+                'type': 'send_notification',
+                'message': message,
+            }
+        )
+
+    async def send_notification(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({'message': message}))
