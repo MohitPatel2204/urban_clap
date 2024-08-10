@@ -1,0 +1,22 @@
+.login {
+  padding: 5px;
+}
+.login-form {
+  margin: 10% auto;
+  max-width: 1180px;
+}
+.text-blue {
+  color: #319fca;
+}
+.form-main-container {
+  justify-content: space-around;
+}
+
+.container-app {
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  left: 55%;
+  top: 45%;
+  transform: translateX(-50%);
+}

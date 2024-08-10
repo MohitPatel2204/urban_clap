@@ -1,0 +1,22 @@
+.item-container div:hover {
+  background-color: darkslategray;
+  border-radius: 5px;
+}
+.main-sidebar {
+  height: 1000px;
+
+  /* position: sticky; */
+  position: fixed;
+  width: 20%;
+  height: 400px;
+  background: #000;
+  /* top: 0; */
+
+  height: 100dvh;
+  z-index: 2;
+  /* width: 45dvh; */
+}
+
+.header-for-page {
+  width: 100%;
+}

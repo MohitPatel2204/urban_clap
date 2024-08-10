@@ -1,0 +1,27 @@
+.headere {
+  background-color: black;
+  padding: 0px 20px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.link-div {
+  display: flex;
+  gap: 50px;
+}
+.link-div li {
+  color: aliceblue;
+  list-style-type: none;
+}
+.link-div li spam {
+  color: aliceblue;
+}
+
+.logo {
+  height: 52px;
+  width: 47px;
+  border-radius: 50px;
+  margin-left: 50px;
+}
