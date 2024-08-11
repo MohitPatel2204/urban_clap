@@ -1,6 +1,5 @@
 import { useCallback } from "react";
 import { useEffect, useState } from "react";
-import { deleteData, getData } from "../../services/axiosrequests";
 import { useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import { debounce } from "lodash";
@@ -8,19 +7,21 @@ import { useSelector } from "react-redux";
 import userT from "../../types/userT";
 import servicesT from "../../types/showservices";
 import Spinner from "../spiner";
-
-// import Searching from "./Searching";
+import SerachBox from "../../components/common/FormController/SerachBox";
+import React from "react";
+import useAxois from "../../hooks/axois";
 
 const Showservices = () => {
-  let [services, setServices] = useState([]);
+  const [services, setServices] = useState<Array<servicesT>>([]);
   const [loader, setLoader] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
   const [user, setUser] = useState("");
-  let userreduxdata = useSelector(
+  const userreduxdata = useSelector(
     (state: { user: { text: userT } }) => state.user
   );
+  const { axiosDelete, axoisGet } = useAxois();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,25 +63,19 @@ const Showservices = () => {
       })
       .then(async (result) => {
         if (result.isConfirmed) {
-          services = services.filter((service: servicesT) => {
-            return service.id != id;
-          });
-          setServices(services);
-          let storedata = JSON.parse(localStorage.getItem("creads") || "'");
-          let config = {
-            headers: { Authorization: `Bearer ${storedata.access}` },
-          };
-          const response = await deleteData(
-            `${import.meta.env.VITE_API_URL}services/${id}/`,
-            config
-          );
+          const servicesResult: Array<servicesT> =
+            services.filter((service: servicesT) => {
+              return service.id != id;
+            }) || [];
+          setServices(servicesResult);
+          await axiosDelete(`services/${id}/`);
           swalWithBootstrapButtons
             .fire({
               title: "Deleted!",
               text: "Category Deleted...!",
               icon: "success",
             })
-            .then(async (result2) => {
+            .then(async () => {
               setCurrentPage(1);
             });
         } else if (result.dismiss === Swal.DismissReason.cancel) {
@@ -96,21 +91,16 @@ const Showservices = () => {
   const debouncedSearch = useCallback(
     debounce(async (page, query) => {
       setLoader(false);
-      let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-      const response = await getData(
-        `${
-          import.meta.env.VITE_API_URL
-        }services/?page=${page}&search=${query}&user=${
+      const response = await axoisGet(`services/`, {
+        page,
+        serach: query,
+        user:
           user == "" && location.state?.id == undefined
             ? ""
             : user == ""
             ? location.state?.id
-            : user
-        }`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
+            : user,
+      });
       setServices(response.context?.results);
       setTotalPage(Math.ceil(response.context.count / 2));
       setLoader(true);
@@ -118,10 +108,10 @@ const Showservices = () => {
     []
   );
 
-  const handleInputChange = (event: any) => {
-    setInputValue(event.target.value);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
     setCurrentPage(1);
-    debouncedSearch(currentPage, event.target.value);
+    debouncedSearch(currentPage, value);
   };
 
   useEffect(() => {
@@ -158,8 +148,8 @@ const Showservices = () => {
         Servicesff
       </div>
       <div className="mb-4 mt-3">
-        <input
-          type="text"
+        <SerachBox
+          name="search"
           value={inputValue}
           onChange={handleInputChange}
           className="form-control"
@@ -178,17 +168,17 @@ const Showservices = () => {
             Add Services
           </p>
         ) : (
-          <></>
+          <React.Fragment></React.Fragment>
         )}
       </div>
       {loader ? (
-        <>
+        <React.Fragment>
           {services.length == 0 ? (
             <div className="fs-3 text-danger col-12 text-center mt-5">
               No Data Found
             </div>
           ) : (
-            <>
+            <React.Fragment>
               <table style={{ width: "100%", padding: "5px", height: "50%" }}>
                 <tbody>
                   <tr>
@@ -214,7 +204,7 @@ const Showservices = () => {
                                 area: item.area,
                                 description: item.description,
                                 price: item.price,
-                                slot: item.slot,
+                                slot: item.slot || [],
                               })
                             }
                             className="btn btn-primary"
@@ -251,20 +241,11 @@ const Showservices = () => {
                   Next
                 </button>
               </div>
-            </>
+            </React.Fragment>
           )}
-        </>
+        </React.Fragment>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            margin: "15% auto",
-          }}
-        >
-          {" "}
-          <Spinner />
-        </div>
+        <Spinner />
       )}
     </div>
   );

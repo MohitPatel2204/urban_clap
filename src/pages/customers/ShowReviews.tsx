@@ -1,33 +1,29 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getData } from "../../services/axiosrequests";
 import { useSelector } from "react-redux";
 import { Rating } from "@mui/material";
 import userT from "../../types/userT";
+import useAxois from "../../hooks/axois";
+import { toast } from "react-toastify";
+import Toast from "../../components/common/Toast";
 
 const ShowReviews = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { axoisGet } = useAxois();
 
-  let userReduxData = useSelector(
+  const userReduxData = useSelector(
     (state: { user: { text: userT } }) => state.user?.text
   );
   const [review, setReview] = useState([]);
   const fetchData = async () => {
     try {
-      let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-      const response = await getData(
-        `${import.meta.env.VITE_API_URL}readreview/?serviceid=${
-          location.state.id
-        }`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
+      const response = await axoisGet(`readreview/`, {
+        serviceid: location.state.id,
+      });
       setReview(response.context.data);
     } catch (error) {
-      console.log(error);
-      // setReview("");
+      toast.error((error as Error).message);
     }
   };
 
@@ -42,9 +38,10 @@ const ShowReviews = () => {
   }, []);
 
   return (
-    <div>
+    <React.Fragment>
+      <Toast />
       <div className="fs-4 text-center mb-3 mt-2">Reviews</div>
-      <div
+      <button
         className="col-md-2 button mb-2"
         style={{ width: "130px" }}
         onClick={() =>
@@ -54,7 +51,7 @@ const ShowReviews = () => {
         }
       >
         Add Review
-      </div>
+      </button>
       <div className="row">
         {review.length == 0 ? (
           <div className="text-danger fs-1 text-center mt-5">No Data Found</div>
@@ -66,7 +63,7 @@ const ShowReviews = () => {
               comment: string;
               images: [{ media: string }];
             }) =>
-              (userReduxData.pk as any) != single.user.id ? (
+              (userReduxData.pk as unknown as string) != single.user.id ? (
                 <div className="row border p-2 mb-3 ">
                   <div className="col-md-12 mb-1">
                     User : {single.user.username}
@@ -102,7 +99,6 @@ const ShowReviews = () => {
                   {single?.images.map((img) => (
                     <div className="col-md-12 d-flex mb-1 justify-content-end">
                       <img
-                        // className="d-flex justify-content-end"
                         src={img.media}
                         width={"60%"}
                         alt={"Image Not Found"}
@@ -114,7 +110,7 @@ const ShowReviews = () => {
           )
         )}
       </div>
-    </div>
+    </React.Fragment>
   );
 };
 

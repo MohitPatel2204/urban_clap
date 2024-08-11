@@ -1,10 +1,11 @@
 import React from "react";
 import TextField from "../../../components/common/FormController/TextField";
-import { ErrorMessage, Field } from "formik";
+import { ErrorMessage, Field, FormikProps } from "formik";
+import userT from "../../../types/userT";
 
-const SecondStep = ({ formik }: any) => {
+const SecondStep = ({ formik }: { formik: FormikProps<userT> }) => {
   return (
-    <>
+    <React.Fragment>
       <TextField
         type="email"
         name="email"
@@ -31,7 +32,6 @@ const SecondStep = ({ formik }: any) => {
             formik.touched.password2 && formik.errors.password2 && "is-invalid"
           }`}
           type="text"
-          name="password2"
           placeholder="confirm password..."
           {...formik.getFieldProps("password2")}
         />
@@ -40,7 +40,7 @@ const SecondStep = ({ formik }: any) => {
       <label>
         Service Provider : <Field type="checkbox" name="is_staff" />
       </label>
-    </>
+    </React.Fragment>
   );
 };
 

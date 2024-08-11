@@ -6,15 +6,14 @@ const SelectField = ({
   options,
   className,
   multiple,
-  onChange,
   ...props
 }: {
   label: string;
   name: string;
   multiple?: boolean;
-  onChange?: (value: string | Array<string>) => unknown;
+  onChange?: (value: unknown) => unknown;
   className?: string;
-  options?: Array<{
+  options: Array<{
     id: string;
     name: string;
   }>;
@@ -22,36 +21,27 @@ const SelectField = ({
 }) => {
   const [field, meta, helpers] = useField(props);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedValue = e.target.value;
     if (multiple) {
-      const selectedOptions = Array.from(
-        e.target.selectedOptions as Array<{ value: string }>
-      ).map((option: { value: string }) => option.value);
+      const selectedOptions = Array.from(e.target.selectedOptions).map(
+        (option) => option.value
+      );
       helpers.setValue(selectedOptions);
-      if (onChange) {
-        onChange(selectedOptions);
-      }
     } else {
-      if (onChange) {
-        onChange(selectedValue);
-      }
       helpers.setValue(selectedValue);
+    }
+
+    if (props.onChange) {
+      props.onChange(field.value);
     }
   };
 
-  // const handleRemoveOption = (optionValue: any) => {
-  //   const updatedValue = field.value.filter(
-  //     (value: any) => value !== optionValue
-  //   );
-  //   helpers.setValue(updatedValue);
-  // };
-
   return (
     <div className={`form-group ${className}`}>
-      <label htmlFor={props.id || props.name}>{label}</label>
+      <label htmlFor={props.id ?? props.name}>{label}</label>
       <select
-        id={props.id || props.name}
+        id={props.id ?? props.name}
         multiple={multiple}
         className={`form-control ${
           meta.touched && meta.error ? "is-invalid" : ""
@@ -62,11 +52,15 @@ const SelectField = ({
         <option key="" value="">
           select value
         </option>
-        {options?.map((option: any) => (
-          <option key={option.id} value={option.id}>
-            {option.name}
-          </option>
-        ))}
+        {options &&
+          options.length > 0 &&
+          options.map((item) => {
+            return (
+              <option value={item.id} id={item.id} key={item.id}>
+                {item.name}
+              </option>
+            );
+          })}
       </select>
       {meta.touched && meta.error && (
         <div className="invalid-feedback">{meta.error}</div>

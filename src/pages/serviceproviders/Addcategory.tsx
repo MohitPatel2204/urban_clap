@@ -1,30 +1,28 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import TextField from "../../components/common/FormController/TextField";
-import { Form, Formik } from "formik";
-import { patchData, postData } from "../../services/axiosrequests";
+import { Form, Formik, FormikErrors, FormikHelpers } from "formik";
 import Swal from "sweetalert2";
 import { logiValidationSchemaCategory } from "../../Schema/addcategory";
+import { errorT } from "../../types/errorT";
+import useAxois from "../../hooks/axois";
+
+type categoryT = {
+  name: string;
+  id: string;
+};
 
 const Addcategory = () => {
   const location = useLocation();
   const initialValues = location.state;
   const navigate = useNavigate();
-
+  const { axiosPost, axiosPatch } = useAxois();
   const handleSubmit = async (
-    values: { name: string; id: number },
-    actions: any
+    values: categoryT,
+    actions: FormikHelpers<categoryT>
   ) => {
-    let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-    let config = {
-      headers: { Authorization: `Bearer ${storedata.access}` },
-    };
     if (values.id == undefined) {
       try {
-        const response = await postData(
-          `${import.meta.env.VITE_API_URL}category/`,
-          values,
-          config
-        );
+        const response = await axiosPost("category/", values, false);
         if (response.status == "success") {
           Swal.fire({
             title: "success",
@@ -34,19 +32,21 @@ const Addcategory = () => {
             navigate("/category");
           });
         }
-      } catch (err: any) {
-        console.log(err);
-        if (Object.keys(err.response.data.context)) {
-          actions.setErrors(err.response.data.context);
+      } catch (err: unknown) {
+        if (Object.keys((err as errorT).response.data.context)) {
+          actions.setErrors(
+            (err as errorT).response.data
+              .context as unknown as FormikErrors<categoryT>
+          );
         }
         actions.setSubmitting(false);
       }
     } else {
       try {
-        const response = await patchData(
-          `${import.meta.env.VITE_API_URL}category/?id=${values.id}`,
+        const response = await axiosPatch(
+          `category/?id=${values.id}`,
           values,
-          config
+          false
         );
         if (response.status == "success") {
           Swal.fire({
@@ -57,11 +57,11 @@ const Addcategory = () => {
             navigate(-1);
           });
         }
-        // navigate("/category");
-      } catch (err: any) {
-        if (Object.keys(err.response.data.context)) {
-          console.log("err");
-          actions.setErrors(err.response.data.context);
+      } catch (err) {
+        if (Object.keys((err as errorT).response.data.context)) {
+          actions.setErrors(
+            (err as errorT).response.data.context as FormikErrors<categoryT>
+          );
         }
         actions.setSubmitting(false);
       }

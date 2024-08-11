@@ -1,53 +1,43 @@
-import React, { useEffect, useState } from "react";
-import ResponsiveAppBar from "../../layouts/header/ResponsiveAppBar";
-import Sidebar from "../../layouts/sidebar/Sidebar";
-// import { TextField } from "@mui/material";
-import { Form, Formik } from "formik";
+import React, { useState } from "react";
+import { Form, Formik, FormikErrors, FormikHelpers } from "formik";
 import { useDispatch, useSelector } from "react-redux";
 import TextField from "../../components/common/FormController/TextField";
-// import { validationschemaUpdateProfile } from "../../Schema/updateprofile";
-import { putData } from "../../services/axiosrequests";
 import Swal from "sweetalert2";
 import { updateUser } from "../../reducer/profile";
 import { useNavigate } from "react-router-dom";
 import userT from "../../types/userT";
 import { validationschemaUpdateProfile } from "../../Schema/updateprofile";
+import { errorT } from "../../types/errorT";
+import useAxois from "../../hooks/axois";
 
 const Profiles = () => {
-  let userReduxData = useSelector(
+  const userReduxData = useSelector(
     (state: { user: { text: userT } }) => state.user
   );
-  let [imageUrl, setImageUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const submitData = async (values: userT, actions: any) => {
+  const { axiosPut } = useAxois();
+  const submitData = async (values: userT, actions: FormikHelpers<userT>) => {
     try {
       const formData = new FormData();
       formData.append("first_name", values.first_name);
-      formData.append("pk", values.pk as any);
+      formData.append("pk", values.pk as unknown as string);
       formData.append("last_name", values.last_name);
       formData.append("username", values.username);
       formData.append("email", values.email);
       formData.append("contact", values.contact);
       formData.append("address", values.address);
-      if (values.profile && values.profile.profile_photo) {
+      if (values.profile.profile_photo) {
         formData.append("profile.profile_photo", values.profile.profile_photo);
       }
-      let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-      let config = {
-        headers: {
-          "Content-Type": " multipart/form-data",
-          Authorization: `Bearer ${storedata.access}`,
-        },
-      };
-      const response = await putData(
-        `${import.meta.env.VITE_API_URL}updateuser/`,
-        formData,
-        config
+      const response = await axiosPut(
+        `updateuser/`,
+        formData as unknown as Record<string, unknown>,
+        true
       );
 
       dispatch(updateUser(response?.context?.profile[0]?.profile_photo));
-      // actions.setSubmitting(false);
       if (response.status == "success") {
         Swal.fire({
           title: "success",
@@ -57,9 +47,11 @@ const Profiles = () => {
           navigate("/profile");
         });
       }
-    } catch (err: any) {
-      if (Object.keys(err.response.data.context)) {
-        actions.setErrors(err.response.data.context);
+    } catch (err: unknown) {
+      if ((err as errorT).response.data.context) {
+        actions.setErrors(
+          (err as errorT).response.data.context as FormikErrors<userT>
+        );
       }
     }
   };
@@ -95,13 +87,22 @@ const Profiles = () => {
                   type="file"
                   label=""
                   name="profile_photo"
-                  // values={formik.values?.profile.profile_photo}
-                  onChange={(e) => {
+                  onChange={(e: unknown) => {
                     formik.setFieldValue(
                       "profile.profile_photo",
-                      e.currentTarget.files[0]
+                      (
+                        (e as React.ChangeEvent<HTMLInputElement>).currentTarget
+                          .files as FileList
+                      )[0]
                     );
-                    setImageUrl(URL.createObjectURL(e.currentTarget.files[0]));
+                    setImageUrl(
+                      URL.createObjectURL(
+                        (
+                          (e as React.ChangeEvent<HTMLInputElement>)
+                            .currentTarget.files as FileList
+                        )[0]
+                      )
+                    );
                   }}
                 />
               </div>

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
-import { getData } from "../../services/axiosrequests";
+import React, { useCallback, useEffect, useState } from "react";
 import { debounce } from "lodash";
 import { useNavigate } from "react-router-dom";
 import "./showservices.css";
 import { Rating } from "@mui/material";
 import Spinner from "../spiner";
+import SerachBox from "../../components/common/FormController/SerachBox";
+import useAxois from "../../hooks/axois";
+import { toast } from "react-toastify";
 
 const ShowServices = () => {
   const [allServices, setAllServices] = useState([]);
@@ -13,23 +15,24 @@ const ShowServices = () => {
   const [loader, setLoader] = useState<boolean>(false);
   const [inputValue, setInputValue] = useState("");
   const navigate = useNavigate();
-
+  const { axoisGet } = useAxois();
   const debouncedSearch = useCallback(
     debounce(async (page, query) => {
-      setLoader(false);
-      const storedata = JSON.parse(localStorage.getItem("creads") || "");
-      const response = await getData(
-        `${
-          import.meta.env.VITE_API_URL
-        }service-filter/?page=${page}&search=${query}`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
-      const newrow = response.context?.results.map(convertRow);
-      setAllServices(newrow);
-      setTotalPage(Math.ceil(response.context.count / 2));
-      setLoader(true);
+      try {
+        setLoader(false);
+        const response = await axoisGet("service-filter/", {
+          page,
+          search: query,
+        });
+        const newrow = response.context?.results.map(convertRow);
+        setAllServices(newrow);
+        setTotalPage(Math.ceil(response.context.count / 2));
+        setLoader(true);
+      } catch (error) {
+        toast.error((error as Error).message);
+      } finally {
+        setLoader(true);
+      }
     }, 500),
     []
   );
@@ -62,10 +65,10 @@ const ShowServices = () => {
     debouncedSearch(currentPage, inputValue);
   }, [currentPage, inputValue, debouncedSearch]);
 
-  const handleInputChange = (event: any) => {
-    setInputValue(event.target.value);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
     setCurrentPage(1);
-    debouncedSearch(1, event.target.value);
+    debouncedSearch(1, value);
   };
 
   const handleNext = () => {
@@ -100,16 +103,16 @@ const ShowServices = () => {
       </div>
 
       <div className="mb-4 mt-3">
-        <input
-          type="text"
+        <SerachBox
           value={inputValue}
           onChange={handleInputChange}
           placeholder="Search services..."
           className="form-control"
+          name={"serach"}
         />
       </div>
       {loader ? (
-        <>
+        <React.Fragment>
           {allServices.map(
             (item: {
               id: number;
@@ -129,10 +132,7 @@ const ShowServices = () => {
                     <strong>Rating:</strong>
                   </div>
                   <div className="col-md-6">
-                    <Rating
-                      value={(item.rating as any) == "" ? 0 : item.rating}
-                      readOnly
-                    />
+                    <Rating value={item.rating ? 0 : item.rating} readOnly />
                   </div>
                 </div>
                 <div className="row">
@@ -213,7 +213,7 @@ const ShowServices = () => {
               Next
             </button>
           </div>
-        </>
+        </React.Fragment>
       ) : (
         <div
           style={{

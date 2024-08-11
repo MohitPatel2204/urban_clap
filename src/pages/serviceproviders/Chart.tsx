@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { getData } from "../../services/axiosrequests";
 import { Bar, Line, Pie } from "react-chartjs-2";
 import "chart.js/auto";
+import Toast from "../../components/common/Toast";
+import { toast } from "react-toastify";
+import chartT from "../../types/cartT";
+import useAxois from "../../hooks/axois";
 
 const Chart = () => {
-  const [chartData, setChartData] = useState({
+  const { axoisGet } = useAxois();
+  const [chartData, setChartData] = useState<chartT>({
     labels: [],
     datasets: [
       {
@@ -17,7 +21,7 @@ const Chart = () => {
       },
     ],
   });
-  const [services, setServices] = useState({
+  const [services, setServices] = useState<chartT>({
     labels: [],
     datasets: [
       {
@@ -30,7 +34,7 @@ const Chart = () => {
       },
     ],
   });
-  const [pieChart, setPieChart] = useState({
+  const [pieChart, setPieChart] = useState<chartT>({
     labels: ["Approved", "Rejected"],
     datasets: [
       {
@@ -49,16 +53,10 @@ const Chart = () => {
       },
     ],
   });
-  let storedata = JSON.parse(localStorage.getItem("creads") || "''");
 
   const fetchData = async () => {
     try {
-      const response = await getData(
-        `${import.meta.env.VITE_API_URL}appointment-status-chart/`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
+      const response = await axoisGet(`appointment-status-chart/`);
       setChartData({
         labels: response.context[1].months,
         datasets: [
@@ -98,18 +96,13 @@ const Chart = () => {
               "rgba(255,99,132,0.6)",
               //   "rgba(255,206,86,0.6)",
             ],
-            backgroundColor: [
-              "rgba(75,192,192,0.2)",
-              "rgba(255,99,132,0.6)",
-              //   "rgba(255,206,86,0.6)",
-            ],
+            backgroundColor: ["rgba(75,192,192,0.2)", "rgba(255,99,132,0.6)"],
             borderWidth: 1,
           },
         ],
       });
-    } catch (error: any) {
-      console.log(error.response);
-      // setChartData();
+    } catch (error) {
+      toast.error((error as Error).message);
     }
   };
 
@@ -135,6 +128,7 @@ const Chart = () => {
           <Pie data={pieChart} />
         </div>
       </div>
+      <Toast />
     </div>
   );
 };

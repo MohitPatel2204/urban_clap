@@ -16,11 +16,15 @@ export const userSlice = createSlice({
       };
       state.user = user;
     },
-    updateUser: (state: { user: any }, action) => {
-      state.user.text.profile.profile_photo = action.payload;
+    updateUser: (state: { user: unknown }, action) => {
+      (
+        state.user as { text: { profile: { profile_photo: unknown } } }
+      ).text.profile.profile_photo = action.payload;
     },
-    updateNotification: (state: { user: any }, action) => {
-      state.user?.text?.notification.push(action.payload);
+    updateNotification: (state: { user: unknown }, action) => {
+      (
+        state.user as { text: { notification: unknown[] } }
+      ).text.notification.push(action.payload);
     },
   },
 });

@@ -1,34 +1,25 @@
-import React from "react";
-import ResponsiveAppBar from "../../layouts/header/ResponsiveAppBar";
-import Sidebar from "../../layouts/sidebar/Sidebar";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Form, Formik } from "formik";
+import { Form, Formik, FormikErrors, FormikHelpers } from "formik";
 import TextField from "../../components/common/FormController/TextField";
-import { patchData, postData } from "../../services/axiosrequests";
 import Swal from "sweetalert2";
 import { ValidationSchemaSlot } from "../../Schema/addslot";
+import { errorT } from "../../types/errorT";
+import useAxois from "../../hooks/axois";
 
 const Addslot = () => {
   const location = useLocation();
   const initialValues = location.state;
   const navigate = useNavigate();
+  const { axiosPatch, axiosPost } = useAxois();
 
   const handleSubmit = async (
     values: { id: number; slot: number },
-    actions: any
+    actions: FormikHelpers<{ id: number; slot: number }>
   ) => {
-    let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-    let config = {
-      headers: { Authorization: `Bearer ${storedata.access}` },
-    };
-    if (values.id == undefined) {
+    if (!values.id) {
       try {
-        const response = await postData(
-          `${import.meta.env.VITE_API_URL}slot/`,
-          values,
-          config
-        );
-        if (response.status == "success") {
+        const response = await axiosPost(`slot/`, values, false);
+        if (response.status === "success") {
           Swal.fire({
             title: "success",
             text: "Slot Added..",
@@ -37,20 +28,20 @@ const Addslot = () => {
             navigate("/slot");
           });
         }
-      } catch (err: any) {
-        console.log(err);
-        if (Object.keys(err.response.data.context)) {
-          actions.setErrors(err.response.data.context);
+      } catch (err) {
+        if (Object.keys((err as errorT).response.data.context)) {
+          actions.setErrors(
+            (err as errorT).response.data.context as FormikErrors<{
+              id: number;
+              slot: number;
+            }>
+          );
         }
         actions.setSubmitting(false);
       }
     } else {
       try {
-        const response = await patchData(
-          `${import.meta.env.VITE_API_URL}slot/${values.id}/`,
-          values,
-          config
-        );
+        const response = await axiosPatch(`slot/${values.id}/`, values, false);
         if (response.status == "success") {
           Swal.fire({
             title: "success",
@@ -60,10 +51,15 @@ const Addslot = () => {
             navigate("/slot");
           });
         }
-      } catch (err: any) {
-        if (Object.keys(err.response.data.context)) {
+      } catch (err) {
+        if (Object.keys((err as errorT).response.data.context)) {
           console.log("err");
-          actions.setErrors(err.response.data.context);
+          actions.setErrors(
+            (err as errorT).response.data.context as FormikErrors<{
+              id: number;
+              slot: number;
+            }>
+          );
         }
         actions.setSubmitting(false);
       }

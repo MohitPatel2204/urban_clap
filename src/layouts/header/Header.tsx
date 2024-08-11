@@ -1,9 +1,10 @@
+import React from "react";
 import "./Header.css";
 import { Outlet, Link } from "react-router-dom";
 
 const Header = () => {
   return (
-    <>
+    <React.Fragment>
       <div className="headere">
         <div className="image-section">
           <img
@@ -37,7 +38,7 @@ const Header = () => {
         </div>
       </div>
       <Outlet />
-    </>
+    </React.Fragment>
   );
 };
 export default Header;

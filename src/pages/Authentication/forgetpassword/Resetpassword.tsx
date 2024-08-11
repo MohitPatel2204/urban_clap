@@ -1,12 +1,12 @@
 import "bootstrap/dist/css/bootstrap.css";
-import { Formik, Form } from "formik";
+import { Formik, Form, FormikHelpers, FormikErrors } from "formik";
 import TextField from "../../../components/common/FormController/TextField";
-// import "../login/Login.css";
 import "./resetpassword.css";
 import { Link, useLocation } from "react-router-dom";
 import React, { useState } from "react";
-import { postData } from "../../../services/axiosrequests";
 import { resetPasswordSchema } from "../../../Schema/resetpassword";
+import { errorT } from "../../../types/errorT";
+import useAxois from "../../../hooks/axois";
 
 const Resetpassword = () => {
   const [message, setMessage] = useState("");
@@ -14,21 +14,33 @@ const Resetpassword = () => {
   const query = new URLSearchParams(location.search);
   const uid = query.get("uid");
   const token = query.get("token");
+  const { axiosPost } = useAxois();
 
   const handleSubmit = async (
     values: { new_password: string; confrim_password: string },
-    actions: any
+    actions: FormikHelpers<{ new_password: string; confrim_password: string }>
   ) => {
     try {
-      const response = await postData(
-        `${import.meta.env.VITE_API_URL}password_reset_confrim/`,
-        { u_id: uid, token: token, new_password: values.new_password }
+      const response = await axiosPost(
+        "password_reset_confrim/",
+        {
+          u_id: uid,
+          token: token,
+          new_password: values.new_password,
+        },
+        false
       );
+      actions.resetForm();
       setMessage(response.context.message);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log(err);
-      if (Object.keys(err.response.data.context)) {
-        actions.setErrors(err.response.data.context);
+      if (Object.keys((err as errorT).response.data.context)) {
+        actions.setErrors(
+          (err as errorT).response.data.context as FormikErrors<{
+            new_password: string;
+            confrim_password: string;
+          }>
+        );
       }
       setMessage("");
       actions.setSubmitting(false);
@@ -50,7 +62,6 @@ const Resetpassword = () => {
                   <img
                     className="rounded-top rounded-bottom"
                     src={`./assets/images/forgot.gif`}
-                    // src={logo}
                     width={"650dvh"}
                   />
                 </div>

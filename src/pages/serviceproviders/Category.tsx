@@ -1,24 +1,31 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { deleteData, getData } from "../../services/axiosrequests";
 import { debounce } from "lodash";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import userT from "../../types/userT";
 import Spinner from "../spiner";
+import SerachBox from "../../components/common/FormController/SerachBox";
+import useAxois from "../../hooks/axois";
+
+type categoryT = {
+  id: number;
+  name: string;
+};
 
 const Category = () => {
-  const [categorys, setcategory] = useState([]);
+  const [categorys, setcategory] = useState<Array<categoryT>>([]);
   const [loader, setLoader] = useState<boolean>(false);
-  const [inputValue, setInputValue] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPage, setTotalPage] = useState(1);
+  const [inputValue, setInputValue] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPage, setTotalPage] = useState<number>(1);
   const navigate = useNavigate();
-  let userdata = useSelector((state: { user: { text: userT } }) => state.user);
-  let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-  let config = { headers: { Authorization: `Bearer ${storedata.access}` } };
+  const userdata = useSelector(
+    (state: { user: { text: userT } }) => state.user
+  );
+  const { axiosDelete, axoisGet } = useAxois();
 
-  const handleUpdate = (data: { id: number; name: string }) => {
+  const handleUpdate = (data: categoryT) => {
     navigate("/addcategory", {
       state: data,
     });
@@ -50,23 +57,16 @@ const Category = () => {
       })
       .then(async (result) => {
         if (result.isConfirmed) {
-          let cat = categorys.filter((service: { id: number }) => {
-            return service.id != id;
-          });
+          const cat = categorys.filter((categoty) => categoty.id !== id);
           setcategory(cat);
           setCurrentPage(1);
 
-          const response = await deleteData(
-            `${import.meta.env.VITE_API_URL}category/?id=${id}`,
-            config
-          );
-          swalWithBootstrapButtons
-            .fire({
-              title: "Deleted!",
-              text: "Category Deleted...!",
-              icon: "success",
-            })
-            .then(async (result2) => {});
+          await axiosDelete(`category/?id=${id}`);
+          swalWithBootstrapButtons.fire({
+            title: "Deleted!",
+            text: "Category Deleted...!",
+            icon: "success",
+          });
         } else if (result.dismiss === Swal.DismissReason.cancel) {
           swalWithBootstrapButtons.fire({
             title: "Cancelled",
@@ -79,17 +79,10 @@ const Category = () => {
   const debouncedSearch = useCallback(
     debounce(async (page, query) => {
       setLoader(false);
-
-      const response = await getData(
-        `${import.meta.env.VITE_API_URL}category/`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-          params: {
-            page: page,
-            search: query,
-          },
-        }
-      );
+      const response = await axoisGet(`category/`, {
+        page: page,
+        search: query,
+      });
       setcategory(response.context?.results);
       setTotalPage(Math.ceil(response.context.count / 2));
       setLoader(true);
@@ -101,10 +94,10 @@ const Category = () => {
     debouncedSearch(currentPage, inputValue);
   }, [currentPage, debouncedSearch]);
 
-  const handleInputChange = (event: any) => {
-    setInputValue(event.target.value);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
     setCurrentPage(1);
-    debouncedSearch(currentPage, event.target.value);
+    debouncedSearch(currentPage, value);
   };
 
   const handleNext = () => {
@@ -124,8 +117,9 @@ const Category = () => {
         Category
       </div>
       <div className="mb-4 mt-3">
-        <input
-          type="text"
+        {/* <input type="text" /> */}
+        <SerachBox
+          name="serch"
           value={inputValue}
           onChange={handleInputChange}
           className="form-control"
@@ -144,7 +138,7 @@ const Category = () => {
         </p>
       </div>
       {loader ? (
-        <>
+        <React.Fragment>
           <table style={{ width: "100%", padding: "5px" }}>
             <tbody>
               <tr>
@@ -201,7 +195,7 @@ const Category = () => {
               Next
             </button>
           </div>
-        </>
+        </React.Fragment>
       ) : (
         <div
           style={{

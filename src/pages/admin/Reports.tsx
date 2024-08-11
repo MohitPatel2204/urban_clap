@@ -1,40 +1,33 @@
-import { useState } from "react";
-import { Form, Formik } from "formik";
+import React, { useState } from "react";
+import { Form, Formik, FormikErrors, FormikHelpers } from "formik";
 import TextField from "../../components/common/FormController/TextField";
-// import { ReportSchema } from "../../Schema/Reports";
-import { getData } from "../../services/axiosrequests";
 import { ReportSchema } from "../../Schema/Reports";
+import { errorT } from "../../types/errorT";
+import useAxois from "../../hooks/axois";
 
 const Reports = () => {
   const [previewData, setPreviewData] = useState([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const { axoisGet } = useAxois();
 
   const handleDowonLoadCSV = async (format: string) => {
     try {
-      let storedata = JSON.parse(localStorage.getItem("creads") || "");
-      let config = {
-        headers: {
-          Authorization: `Bearer ${storedata.access}`,
+      const response = await axoisGet(
+        `${format}/`,
+        {
+          start_date: startDate,
+          end_date: endDate,
         },
-        responseType: "arraybuffer",
-      };
-      const response = await getData(
-        `${
-          import.meta.env.VITE_API_URL
-        }${format}/?start_date=${startDate}&end_date=${endDate}`,
-        config
+        "arraybuffer"
       );
-      let blob;
-      let mimeType;
-      if (format === "pdf") {
+      let blob: Blob;
+      if (format == "pdf") {
         blob = new Blob([new Uint8Array(response)], {
           type: "application/pdf",
         });
-        mimeType = "application/pdf";
-      } else if (format === "csv") {
+      } else if (format == "csv") {
         blob = new Blob([response], { type: "text/csv" });
-        mimeType = "text/csv";
       } else {
         throw new Error(`Unsupported file format: ${format}`);
       }
@@ -52,27 +45,21 @@ const Reports = () => {
 
   const handleSubmit = async (
     values: { start_date: string; end_date: string },
-    actions: any
+    actions: FormikHelpers<{ start_date: string; end_date: string }>
   ) => {
     setEndDate(values.end_date);
     setStartDate(values.start_date);
-    let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-    let config = {
-      headers: {
-        Authorization: `Bearer ${storedata.access}`,
-      },
-    };
-
     try {
-      const response = await getData(
-        `${import.meta.env.VITE_API_URL}csvdataview/?start_date=${
-          values.start_date
-        }&end_date=${values.end_date}`,
-        config
-      );
+      const response = await axoisGet(`csvdataview/`, {
+        start_date: values.start_date,
+        end_date: values.end_date,
+      });
       setPreviewData(response.context);
-    } catch (err: any) {
-      actions.setErrors(err.response.data.context.data);
+    } catch (err: unknown) {
+      actions.setErrors(
+        ((err as errorT).response.data.context as { data: unknown })
+          .data as FormikErrors<{ start_date: string; end_date: string }>
+      );
       actions.setSubmitting(false);
     }
   };
@@ -111,7 +98,7 @@ const Reports = () => {
       </Formik>
 
       {previewData.length != 0 ? (
-        <>
+        <React.Fragment>
           <div className="row border mt-2">
             <div className="col-md-2 table-header">Service</div>
             <div className="col-md-2 table-header">Service Provider</div>
@@ -167,7 +154,7 @@ const Reports = () => {
               Download PDF
             </div>
           </div>
-        </>
+        </React.Fragment>
       ) : (
         <div className="text-danger text-center fs-3">Data not found!</div>
       )}

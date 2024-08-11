@@ -1,21 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { deleteData, getData } from "../../services/axiosrequests";
 import Swal from "sweetalert2";
 import { debounce } from "lodash";
+import userT from "../../types/userT";
+import { toast } from "react-toastify";
+import SerachBox from "../../components/common/FormController/SerachBox";
+import Toast from "../../components/common/Toast";
+import useAxois from "../../hooks/axois";
 
 interface slotT {
   id: number;
   slot: string;
-  user?: any;
+  user?: userT;
 }
 
 const Slot = () => {
-  let [slot, setSlot] = useState([]);
+  let [slot, setSlot] = useState<Array<slotT>>([]);
   const [inputValue, setInputValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
   const navigate = useNavigate();
+  const { axiosDelete, axoisGet } = useAxois();
 
   const handleUpdate = (data: slotT) => {
     navigate("/addslot", {
@@ -56,24 +61,11 @@ const Slot = () => {
           setSlot(slot);
           setCurrentPage(1);
           try {
-            let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-            let config = {
-              headers: { Authorization: `Bearer ${storedata.access}` },
-            };
-            const response = await deleteData(
-              `${import.meta.env.VITE_API_URL}slot/${id}/`,
-              config
-            );
-          } catch (err: any) {
-            console.log(err.response);
+            await axiosDelete(`slot/${id}/`);
+            toast.success("Slot deleted successfully");
+          } catch (err) {
+            toast.error((err as Error).message);
           }
-          swalWithBootstrapButtons
-            .fire({
-              title: "Deleted!",
-              text: "Category Deleted...!",
-              icon: "success",
-            })
-            .then(async (result2) => {});
         } else if (result.dismiss === Swal.DismissReason.cancel) {
           swalWithBootstrapButtons.fire({
             title: "Cancelled",
@@ -86,13 +78,10 @@ const Slot = () => {
 
   const debouncedSearch = useCallback(
     debounce(async (page, query) => {
-      let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-      const response = await getData(
-        `${import.meta.env.VITE_API_URL}slot/?page=${page}&search=${query}`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
+      const response = await axoisGet(`slot/`, {
+        page,
+        search: query,
+      });
       setSlot(response.context?.results);
       setTotalPage(Math.ceil(response.context.count / 2));
     }, 500),
@@ -103,10 +92,10 @@ const Slot = () => {
     debouncedSearch(currentPage, inputValue);
   }, [currentPage, debouncedSearch]);
 
-  const handleInputChange = (event: any) => {
-    setInputValue(event.target.value);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
     setCurrentPage(1);
-    debouncedSearch(currentPage, event.target.value);
+    debouncedSearch(currentPage, value);
   };
   const handleNext = () => {
     if (currentPage < totalPage) {
@@ -136,8 +125,8 @@ const Slot = () => {
         </p>
       </div>
       <div className="mb-4 mt-3">
-        <input
-          type="text"
+        <SerachBox
+          name="serachbox"
           value={inputValue}
           onChange={handleInputChange}
           className="form-control"
@@ -199,6 +188,7 @@ const Slot = () => {
           Next
         </button>
       </div>
+      <Toast />
     </div>
   );
 };

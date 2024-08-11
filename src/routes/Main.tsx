@@ -9,6 +9,7 @@ import Admin from "./Admin";
 import "../pages/customers/showservices.css";
 import Customer from "./Customer";
 import "../pages/spiner.css";
+import React from "react";
 
 const Main = () => {
   const routes = useRoutes([
@@ -21,7 +22,7 @@ const Main = () => {
   ]);
   return (
     <AuthProvider>
-      <>{routes}</>
+      <React.Fragment>{routes}</React.Fragment>
     </AuthProvider>
   );
 };

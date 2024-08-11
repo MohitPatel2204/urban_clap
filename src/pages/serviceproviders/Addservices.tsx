@@ -1,37 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { Formik, Form } from "formik";
+import { Formik, Form, FormikHelpers, FormikErrors } from "formik";
 import TextField from "../../components/common/FormController/TextField";
-import { getData, patchData, postData } from "../../services/axiosrequests";
 import { useLocation, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import servicesT from "../../types/showservices";
 import SelectField from "../../components/common/FormController/SelectField";
 import { validationSchemaAddServices } from "../../Schema/Addservices";
+import { errorT } from "../../types/errorT";
+import useAxois from "../../hooks/axois";
 
+type serviceT = {
+  category: number;
+  description: string;
+  area: number[];
+  slot: number[];
+  price: number;
+  id: number;
+};
 type rowT = { id: number; slot?: string; name: string };
 
-const Addservices = (props) => {
+const Addservices = () => {
   const location = useLocation();
   const initialValues = location.state;
   const navigate = useNavigate();
-  const [cetegory, setCategory] = useState([]);
-  const [slot, setSlot] = useState([]);
-
+  const [cetegory, setCategory] = useState<Array<{ id: string; name: string }>>(
+    []
+  );
+  const [slot, setSlot] = useState<Array<{ id: string; name: string }>>([]);
+  const { axiosPost, axoisGet, axiosPatch } = useAxois();
   const fetchData = async () => {
     try {
-      let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-      const cetegoryOptions = await getData(
-        `${import.meta.env.VITE_API_URL}allcategory/`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
-      const response = await getData(
-        `${import.meta.env.VITE_API_URL}allslot/`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
+      const cetegoryOptions = await axoisGet(`allcategory/`);
+      const response = await axoisGet(`allslot/`);
       setCategory(cetegoryOptions.context.data);
       const optionSlots = response.context.map((slot: rowT) =>
         convertrow(slot)
@@ -46,39 +45,16 @@ const Addservices = (props) => {
     fetchData();
   }, []);
 
-  // const initialValues = {
-  //   category: "",
-  //   area: [],
-  //   description: "",
-  //   price: "",
-  //   slot: [],
-  // };
-
   const handleSubmit = async (
-    values: {
-      category: number;
-      description: string;
-      area: number[];
-      slot: number[];
-      price: number;
-      id: number;
-    },
-    actions: any
+    values: serviceT,
+    actions: FormikHelpers<serviceT>
   ) => {
     values.slot = values.slot.map((i: number) => Number(i));
     values.area = values.area.map((i: number) => Number(i));
 
-    let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-    let config = {
-      headers: { Authorization: `Bearer ${storedata.access}` },
-    };
     if (values.id == undefined) {
       try {
-        const response = await postData(
-          `${import.meta.env.VITE_API_URL}services/`,
-          values,
-          config
-        );
+        const response = await axiosPost(`services/`, values, false);
         if (response.status == "success") {
           Swal.fire({
             title: "success",
@@ -88,19 +64,20 @@ const Addservices = (props) => {
             navigate(-1);
           });
         }
-        // navigate("/services");
-      } catch (err: any) {
-        if (Object.keys(err.response.data.context)) {
-          actions.setErrors(err.response.data.context);
+      } catch (err) {
+        if (Object.keys((err as errorT).response.data.context)) {
+          actions.setErrors(
+            (err as errorT).response.data.context as FormikErrors<serviceT>
+          );
         }
         actions.setSubmitting(false);
       }
     } else {
       try {
-        const response = await patchData(
-          `${import.meta.env.VITE_API_URL}services/${values.id}/`,
+        const response = await axiosPatch(
+          `services/${values.id}/`,
           values,
-          config
+          false
         );
         if (response.status == "success") {
           Swal.fire({
@@ -111,10 +88,12 @@ const Addservices = (props) => {
             navigate(-1);
           });
         }
-      } catch (err: any) {
-        if (Object.keys(err.response.data.context)) {
+      } catch (err) {
+        if (Object.keys((err as errorT).response.data.context)) {
           console.log("err");
-          actions.setErrors(err.response.data.context);
+          actions.setErrors(
+            (err as errorT).response.data.context as FormikErrors<serviceT>
+          );
         }
         actions.setSubmitting(false);
       }
@@ -125,10 +104,9 @@ const Addservices = (props) => {
   };
 
   const area = [
-    { id: "2", name: "kaliyabid" },
-    { id: "3", name: "ghoghacircle" },
+    { id: "1", name: "kaliyabid" },
+    { id: "2", name: "ghoghacircle" },
   ];
-
   return (
     <div className="container mt-4">
       <div className="row justify-content-center">

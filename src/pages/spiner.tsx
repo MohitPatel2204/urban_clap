@@ -1,3 +1,9 @@
-const Spinner = () => <div className="loader"></div>;
+const Spinner = () => {
+  return (
+    <div className="pos-center">
+      <div className="loader"></div>
+    </div>
+  );
+};
 
 export default Spinner;

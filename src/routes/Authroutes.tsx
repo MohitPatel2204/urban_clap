@@ -1,6 +1,7 @@
 import Forgetpassword from "../pages/Authentication/forgetpassword/Forgetpassword";
 import Resetpassword from "../pages/Authentication/forgetpassword/Resetpassword";
 import Login from "../pages/Authentication/login/Login";
+import Hanldelogout from "../pages/Authentication/logout/Hanldelogout";
 import Registration from "../pages/Authentication/registration/Registation";
 
 export const authroute: Array<{
@@ -22,5 +23,9 @@ export const authroute: Array<{
   {
     path: "/reset_password",
     element: <Resetpassword />,
+  },
+  {
+    path: "/logout",
+    element: <Hanldelogout />,
   },
 ];

@@ -1,8 +1,11 @@
+import React from "react";
 import TextField from "../../../components/common/FormController/TextField";
+import { FormikProps } from "formik";
+import userT from "../../../types/userT";
 
-const Firststep = ({ formik }: any) => {
+const Firststep: React.FC<{ formik: FormikProps<userT> }> = ({ formik }) => {
   return (
-    <>
+    <React.Fragment>
       <TextField
         type="text"
         label="Firstname"
@@ -15,14 +18,12 @@ const Firststep = ({ formik }: any) => {
         label="Lastname"
         placeholder="Ipsum"
       />
-
       <TextField
         type="text"
         name="contact"
         label="Contect"
-        placeholder="loremipsum@gmail.com"
+        placeholder="0000000000"
       />
-
       <TextField
         type="text"
         name="address"
@@ -33,15 +34,14 @@ const Firststep = ({ formik }: any) => {
         type="file"
         name="profile_photo"
         label="Address"
-        onChange={(e: any) => {
+        onChange={(e: unknown) => {
           formik.setFieldValue(
             "profile.profile_photo",
-            e.currentTarget.files[0]
+            ((e as React.ChangeEvent<HTMLInputElement>).currentTarget.files as unknown as FileList)[0]
           );
         }}
-        // placeholder="...."
       />
-    </>
+    </React.Fragment>
   );
 };
 

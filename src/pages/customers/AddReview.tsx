@@ -1,48 +1,47 @@
-import  { useState } from "react";
+import { useState } from "react";
 
-import { Form, Formik } from "formik";
+import { Form, Formik, FormikErrors, FormikHelpers } from "formik";
 import { useLocation, useNavigate } from "react-router-dom";
 import TextField from "../../components/common/FormController/TextField";
-import { postData } from "../../services/axiosrequests";
-// import { validationSchemaAddReview } from "../../Schema/addreview";
 import Swal from "sweetalert2";
 import { Box, Rating, Typography } from "@mui/material";
 import { validationSchemaAddReview } from "../../Schema/addreview";
+import { errorT } from "../../types/errorT";
+import useAxois from "../../hooks/axois";
 
 const initalValues = {
-  rating: "",
+  rating: 0,
   comment: "",
   uploaded_images: [],
 };
+
+export type reviewT = {
+  rating: number;
+  comment: string;
+  uploaded_images: Array<Blob>;
+};
+
 const AddReview = () => {
-  const [value, setValue] = useState(0 as any);
+  const [value, setValue] = useState<number>(0);
   const location = useLocation();
   const navigate = useNavigate();
+  const { axiosPost } = useAxois();
   const handleSubmit = async (
-    values: { uploaded_images: []; comment: string; rating: any },
-    actions: any
+    values: reviewT,
+    actions: FormikHelpers<reviewT>
   ) => {
-    let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-    let config = {
-      headers: {
-        "Content-Type": " multipart/form-data",
-        Authorization: `Bearer ${storedata.access}`,
-      },
-    };
-
     try {
       const formData = new FormData();
       values.uploaded_images.forEach((file) => {
         formData.append("uploaded_images", file);
       });
       formData.append("comment", values.comment);
-      formData.append("rating", values.rating);
+      formData.append("rating", values.rating.toLocaleString());
       formData.append("service", location.state?.service);
-
-      const response = await postData(
-        `${import.meta.env.VITE_API_URL}review/`,
-        formData,
-        config
+      const response = await axiosPost(
+        `review/`,
+        formData as unknown as Record<string, unknown>,
+        true
       ).catch((err) => {
         console.log(err);
         actions.setErrors(err.response.data.context.data);
@@ -59,8 +58,11 @@ const AddReview = () => {
           });
         });
       }
-    } catch (err: any) {
-      actions.setErrors(err.response.data.context.data);
+    } catch (err: unknown) {
+      actions.setErrors(
+        ((err as errorT).response.data.context as { data: unknown })
+          .data as FormikErrors<reviewT>
+      );
       actions.setSubmitting(false);
     }
   };
@@ -68,7 +70,7 @@ const AddReview = () => {
     <div>
       <div className="fs-4 text-center mb-5">Add Review</div>
       <Formik
-        initialValues={initalValues as any}
+        initialValues={initalValues as reviewT}
         validationSchema={validationSchemaAddReview}
         onSubmit={handleSubmit}
       >
@@ -86,8 +88,10 @@ const AddReview = () => {
               type="file"
               className="form-control"
               multiple={true}
-              onChange={(e: any) => {
-                let files = Array.from(e.target.files);
+              onChange={(e) => {
+                const files = Array.from(
+                  e.target.files as unknown as Array<FileList>
+                );
                 setFieldValue("uploaded_images", files);
               }}
             />
@@ -102,9 +106,13 @@ const AddReview = () => {
               <Rating
                 name="rating"
                 value={value}
-                onChange={(event: any, newValue) => {
-                  setValue(newValue);
-                  setFieldValue("rating", event.target.value);
+                onChange={(event, newValue) => {
+                  setValue(newValue as number);
+                  setFieldValue(
+                    "rating",
+                    (event as unknown as React.ChangeEvent<HTMLInputElement>)
+                      .target.value
+                  );
                 }}
               />
             </div>

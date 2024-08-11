@@ -5,10 +5,10 @@ import userT from "../types/userT";
 export interface IAuth {
   login: () => void;
 }
-const AuthContext = createContext<IAuth | any>(null);
+const AuthContext = createContext<IAuth | null>(null);
 
 export const AuthProvider = (props: { children: JSX.Element }) => {
-  const user = localStorage.getItem("creads");
+  const user: string | null = localStorage.getItem("creads");
 
   const navigate = useNavigate();
 
@@ -32,7 +32,9 @@ export const AuthProvider = (props: { children: JSX.Element }) => {
     []
   );
   return (
-    <AuthContext.Provider value={value}>{props.children}</AuthContext.Provider>
+    <AuthContext.Provider value={value as unknown as IAuth}>
+      {props.children}
+    </AuthContext.Provider>
   );
 };
 

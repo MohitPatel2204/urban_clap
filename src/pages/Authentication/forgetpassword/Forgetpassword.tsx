@@ -1,30 +1,36 @@
-import { Form, Formik } from "formik";
+import { Form, Formik, FormikErrors, FormikHelpers } from "formik";
 import React, { useState } from "react";
 import TextField from "../../../components/common/FormController/TextField";
 import "bootstrap/dist/css/bootstrap.css";
 import { Link } from "react-router-dom";
 import "./forgetpass.css";
-import { postData } from "../../../services/axiosrequests";
 import { forgotPasswordSchema } from "../../../Schema/forgot";
+import { errorT } from "../../../types/errorT";
+import useAxois from "../../../hooks/axois";
 
 const Forgetpassword = () => {
   const [resetLink, setResetLink] = useState(false);
   const [uid, setUid] = useState("");
   const [token, setToken] = useState("");
+  const { axiosPost } = useAxois();
 
-  const handleSubmit = async (values: { username: string }, actions: any) => {
+  const handleSubmit = async (
+    values: { username: string },
+    actions: FormikHelpers<{ username: string }>
+  ) => {
     try {
-      const response = await postData(
-        `${import.meta.env.VITE_API_URL}forgot-password/`,
-        values
-      );
-
+      const response = await axiosPost("forgot-password/", values, false);
       setUid(response.context.u_id);
       setToken(response.context.token);
       setResetLink(true);
-    } catch (err: any) {
-      if (Object.keys(err.response.data.context)) {
-        actions.setErrors(err.response.data.context);
+      actions.resetForm();
+    } catch (err) {
+      if (Object.keys((err as errorT).response.data.context)) {
+        actions.setErrors(
+          (err as errorT).response.data.context as FormikErrors<{
+            username: string;
+          }>
+        );
       }
       setResetLink(false);
     }

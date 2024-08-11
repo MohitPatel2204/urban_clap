@@ -8,7 +8,7 @@ export default interface userT {
   contact: string;
   address: string;
   is_active?: boolean;
-  profile: { profile_photo: string };
+  profile: { profile_photo: File | null };
   notification?: Array<string>;
   is_superuser?: boolean;
   password?: string;

@@ -1,11 +1,12 @@
-import  { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SelectField from "../../components/common/FormController/SelectField";
 import TextField from "../../components/common/FormController/TextField";
-import { Form, Formik } from "formik";
-import { postData } from "../../services/axiosrequests";
+import { Form, Formik, FormikErrors, FormikHelpers } from "formik";
 import Swal from "sweetalert2";
 import { validationSchemaAddAppointment } from "../../Schema/addappointment";
+import { errorT } from "../../types/errorT";
+import useAxois from "../../hooks/axois";
 
 const AddAppointment = () => {
   const location = useLocation();
@@ -16,6 +17,7 @@ const AddAppointment = () => {
     service: number;
     work_date: string;
   }>({} as { area: []; slot: []; service: number; work_date: string });
+  const {axiosPost} = useAxois();
   useEffect(() => {
     setValue({
       service: location.state.service,
@@ -25,16 +27,19 @@ const AddAppointment = () => {
     });
   }, []);
 
-  const handleSubmit = async (values: { area: []; slot: [] }, actions: any) => {
-    let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-    let config = {
-      headers: { Authorization: `Bearer ${storedata.access}` },
-    };
+  const handleSubmit = async (
+    values: { area: []; slot: [] },
+    actions: FormikHelpers<{
+      area: [];
+      slot: [];
+      service: number;
+      work_date: string;
+    }>
+  ) => {
     try {
-      const response = await postData(
-        `${import.meta.env.VITE_API_URL}appointment/`,
+      const response = await axiosPost(
+        `appointment/`,
         values,
-        config
       ).catch((err) => {
         actions.setErrors(err.response.data.context.data);
         actions.setSubmitting(false);
@@ -48,8 +53,16 @@ const AddAppointment = () => {
           navigate("/all-services");
         });
       }
-    } catch (err: any) {
-      actions.setErrors(err.response.data.context.data);
+    } catch (err: unknown) {
+      actions.setErrors(
+        ((err as errorT).response.data.context as { data: unknown })
+          .data as FormikErrors<{
+          area: [];
+          slot: [];
+          service: number;
+          work_date: string;
+        }>
+      );
       actions.setSubmitting(false);
     }
   };

@@ -1,27 +1,31 @@
-import { Formik, Form } from "formik";
+import { Formik, Form, FormikHelpers } from "formik";
 import "./Login.css";
 import { Link } from "react-router-dom";
-import { useAuth } from "../../../hooks/UseAuth";
-import { postData } from "../../../services/axiosrequests";
+import { IAuth, useAuth } from "../../../hooks/UseAuth";
 import TextField from "../../../components/common/FormController/TextField";
 import { logiValidationSchema } from "../../../Schema/login";
+import { errorT } from "../../../types/errorT";
+import useAxois from "../../../hooks/axois";
+import Toast from "../../../components/common/Toast";
 
 const Login = () => {
-  const { login } = useAuth();
-  const handleSubmit = async (values: {
-    username: string;
-    password: string;
-  }) => {
+  const { login } = useAuth<IAuth | null>(null);
+  const { axiosPost } = useAxois();
+  const handleSubmit = async (
+    values: {
+      username: string;
+      password: string;
+    },
+    actions: FormikHelpers<{ username: string; password: string }>
+  ) => {
     const errorTag = document.getElementById("error") as HTMLElement;
     try {
-      const response = await postData(
-        `${import.meta.env.VITE_API_URL}login/`,
-        values
-      );
+      const response = await axiosPost("login/", values, false);
       errorTag.style.display = "none";
+      actions.resetForm();
       await login(response.context);
-    } catch (err: any) {
-      if (Object.keys(err.response.data.context)) {
+    } catch (err: unknown) {
+      if (Object.keys((err as errorT).response.data.context)) {
         errorTag.style.display = "block";
       }
     }
@@ -105,6 +109,7 @@ const Login = () => {
           )}
         </Formik>
       </div>
+      <Toast />
     </div>
   );
 };

@@ -3,51 +3,47 @@ import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
 import Menu from "@mui/material/Menu";
 import MenuIcon from "@mui/icons-material/Menu";
 import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
 import MenuItem from "@mui/material/MenuItem";
 import AdbIcon from "@mui/icons-material/Adb";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getData } from "../../services/axiosrequests";
 import { Badge } from "@mui/material";
 import { addUser, updateNotification } from "../../reducer/profile";
-import { handleLogout } from "../../pages/Authentication/logout/Hanldelogout";
 import userT from "../../types/userT";
+import useAxois from "../../hooks/axois";
+import { toast } from "react-toastify";
+import Toast from "../../components/common/Toast";
 
 interface settingsT {
   name: string;
   path: string;
-  onclick: any;
 }
 
 const settings: settingsT[] = [
-  { name: "Profile", path: "/profile", onclick: null },
-  { name: "Logout", path: "/signin", onclick: handleLogout },
+  { name: "Profile", path: "/profile" },
+  { name: "Logout", path: "/signin" },
 ];
 
 function ResponsiveAppBar() {
-  const [anchorElNav, setAnchorElNav] = React.useState(null);
-  const [anchorElUser, setAnchorElUser] = React.useState(null);
+  const [anchorElNav, setAnchorElNav] = React.useState<HTMLElement | null>(
+    null
+  );
+  const [anchorElUser, setAnchorElUser] = React.useState<HTMLElement | null>(
+    null
+  );
   const user = useDispatch();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { axoisGet } = useAxois();
 
-  React.useEffect(() => {
-    let storedata = JSON.parse(localStorage.getItem("creads") || '""');
-    let config = {
-      headers: { Authorization: `Bearer ${storedata.access}` },
-    };
-    async function fetchMyAPI() {
-      let response = await getData(
-        `${import.meta.env.VITE_API_URL}updateuser/`,
-        config
-      );
+  async function fetchMyAPI() {
+    try {
+      const response = await axoisGet(`updateuser/`);
       const userdata = response.context;
       user(
         addUser({
@@ -56,11 +52,18 @@ function ResponsiveAppBar() {
           notification: [],
         })
       );
+    } catch (error) {
+      toast.error((error as Error).message);
     }
+  }
+
+  React.useEffect(() => {
     fetchMyAPI();
   }, []);
 
-  let storedata = useSelector((state: { user: { text: userT } }) => state.user);
+  const storedata = useSelector(
+    (state: { user: { text: userT } }) => state.user
+  );
 
   React.useEffect(() => {
     if (storedata?.text?.pk != undefined) {
@@ -89,10 +92,10 @@ function ResponsiveAppBar() {
     }
   }, [storedata?.text?.pk]);
 
-  const handleOpenNavMenu = (event: any) => {
+  const handleOpenNavMenu = (event: React.ChangeEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget);
   };
-  const handleOpenUserMenu = (event: any) => {
+  const handleOpenUserMenu = (event: React.ChangeEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
 
@@ -193,7 +196,6 @@ function ResponsiveAppBar() {
                   <Link
                     className="link-offset-2 link-underline link-underline-opacity-0 text-dark"
                     to={setting.path}
-                    onClick={() => setting.onclick}
                   >
                     {setting.name}
                   </Link>
@@ -203,6 +205,7 @@ function ResponsiveAppBar() {
           </Box>
         </Toolbar>
       </Container>
+      <Toast />
     </AppBar>
   );
 }

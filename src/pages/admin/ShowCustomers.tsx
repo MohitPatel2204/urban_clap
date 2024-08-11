@@ -1,41 +1,46 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
-import { getData } from "../../services/axiosrequests";
 import { profileT } from "./ServiceProviders";
 import Spinner from "../spiner";
+import SerachBox from "../../components/common/FormController/SerachBox";
+import { toast } from "react-toastify";
+import useAxois from "../../hooks/axois";
 
 const ShowCustomers = () => {
-  let [customer, setCustomer] = useState<profileT[]>([]);
+  const [customer, setCustomer] = useState<profileT[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
+  const { axoisGet } = useAxois();
   const [loader, setLoader] = useState<boolean>(false);
 
   const navigate = useNavigate();
 
   const debouncedSearch = useCallback(
     debounce(async (page, query) => {
-      setLoader(false);
-      let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-      const response = await getData(
-        `${
-          import.meta.env.VITE_API_URL
-        }userdata/?type=customer&page=${page}&search=${query}`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
-      setCustomer(response.context?.results);
-      setTotalPage(Math.ceil(response.context.count / 6));
-      setLoader(true);
+      try {
+        setLoader(false);
+        const response = await axoisGet("userdata/", {
+          type: "customer",
+          page,
+          search: query,
+        });
+        setCustomer(response.context?.results);
+        setTotalPage(Math.ceil(response.context.count / 6));
+        setLoader(true);
+      } catch (error) {
+        toast.error((error as Error).message);
+      } finally {
+        setLoader(true);
+      }
     }, 1000),
     []
   );
-  const handleInputChange = (event: any) => {
-    setInputValue(event.target.value);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
     setCurrentPage(1);
-    debouncedSearch(currentPage, event.target.value);
+    debouncedSearch(currentPage, value);
   };
   useEffect(() => {
     debouncedSearch(currentPage, inputValue);
@@ -64,8 +69,8 @@ const ShowCustomers = () => {
         Customers
       </div>
       <div className="mb-4 mt-3">
-        <input
-          type="text"
+        <SerachBox
+          name="search"
           value={inputValue}
           className="form-control"
           onChange={handleInputChange}
@@ -73,13 +78,13 @@ const ShowCustomers = () => {
         />
       </div>
       {loader ? (
-        <>
+        <React.Fragment>
           {customer.length == 0 ? (
             <div className="text-center text-danger">
               no data available yet!
             </div>
           ) : (
-            <>
+            <React.Fragment>
               {customer?.map((single, key) => (
                 <div
                   className="container bootstrap snippets bootdey col-md-4 "
@@ -135,9 +140,9 @@ const ShowCustomers = () => {
                   Next
                 </button>
               </div>
-            </>
+            </React.Fragment>
           )}
-        </>
+        </React.Fragment>
       ) : (
         <div
           style={{

@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
-import { getData } from "../../services/axiosrequests";
+import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { debounce } from "lodash";
 import Spinner from "../spiner";
+import SerachBox from "../../components/common/FormController/SerachBox";
+import useAxois from "../../hooks/axois";
+import { toast } from "react-toastify";
+import Toast from "../../components/common/Toast";
 
 export interface profileT {
   pk: number;
@@ -12,38 +15,41 @@ export interface profileT {
 
 const ServiceProviders = () => {
   const [loader, setLoader] = useState<boolean>(false);
-  let [sp, setSp] = useState<profileT[]>([]);
-  const [inputValue, setInputValue] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPage, setTotalPage] = useState(1);
+  const [sp, setSp] = useState<profileT[]>([]);
+  const [inputValue, setInputValue] = useState<string>("");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPage, setTotalPage] = useState<number>(1);
   const navigate = useNavigate();
+  const { axoisGet } = useAxois();
 
   const debouncedSearch = useCallback(
     debounce(async (page: number, query: string) => {
-      setLoader(false);
-      let storedata = JSON.parse(localStorage.getItem("creads") || "''");
-      const response = await getData(
-        `${
-          import.meta.env.VITE_API_URL
-        }userdata/?type=sp&page=${page}&search=${query}`,
-        {
-          headers: { Authorization: `Bearer ${storedata.access}` },
-        }
-      );
-      setSp(response.context?.results);
-      setTotalPage(Math.ceil(response.context.count / 6));
-      setLoader(true);
+      try {
+        setLoader(false);
+        const response = await axoisGet("userdata/", {
+          type: "sp",
+          page,
+          search: query,
+        });
+        setSp(response.context?.results);
+        setTotalPage(Math.ceil(response.context.count / 6));
+        setLoader(true);
+      } catch (error) {
+        toast.error((error as Error).message);
+      } finally {
+        setLoader(true);
+      }
     }, 1000),
     []
   );
-  const handleInputChange = (event: any) => {
-    setInputValue(event.target.value);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
     setCurrentPage(1);
-    debouncedSearch(currentPage, event.target.value);
+    debouncedSearch(currentPage, value);
   };
   useEffect(() => {
     debouncedSearch(currentPage, inputValue);
-  }, [currentPage, debouncedSearch]);
+  }, [currentPage, debouncedSearch, inputValue]);
 
   const handleNext = () => {
     if (currentPage < totalPage) {
@@ -69,53 +75,47 @@ const ServiceProviders = () => {
         Service Providers
       </div>
       <div className="mb-4 mt-3">
-        <input
-          type="text"
+        <SerachBox
+          name="search"
           value={inputValue}
           onChange={handleInputChange}
-          className="form-control"
-          placeholder="serach here"
         />
       </div>
       {loader ? (
-        <>
+        <React.Fragment>
           {sp.length == 0 ? (
             <div className="text-center text-danger">
               no data available yet!
             </div>
           ) : (
-            <>
+            <React.Fragment>
               {sp?.map((single, key) => (
                 <div
                   className="container bootstrap snippets bootdey col-md-4 "
                   style={{ margin: "2% auto" }}
                   key={key}
                 >
-                  <div className="col-md-12 shadow-lg p-3 mb-5 bg-white rounded">
-                    <div className="box-info text-center user-profile-2">
-                      <div className="user-profile-inner">
-                        <h4 className="text-balck">{single.username}</h4>
-                        <img
-                          src={single?.profile[0]?.profile_photo}
-                          className="rounded-circle img-fluid"
-                          alt="Not Found"
-                          style={{
-                            borderRadius: "50px",
-                            width: "50%",
-                            height: "20dvh",
-                          }}
-                        />
-                        <h5>Service Provider</h5>
-                        <div className="user-button">
-                          <div className="row">
-                            <div className="col-12 mb-2">
-                              <div
-                                onClick={() => handleClick(single.pk)}
-                                className="button"
-                              >
-                                <i className="fa fa-envelope"></i> Show services
-                              </div>
-                            </div>
+                  <div className="col-md-12 shadow-lg p-3 mb-5 bg-white rounded box-info text-center user-profile-2">
+                    <div className="user-profile-inner">
+                      <h4 className="text-balck">{single.username}</h4>
+                      <img
+                        src={single?.profile[0]?.profile_photo}
+                        className="rounded-circle img-fluid"
+                        alt="Not Found"
+                        style={{
+                          borderRadius: "50px",
+                          width: "50%",
+                          height: "20dvh",
+                        }}
+                      />
+                      <h5>Service Provider</h5>
+                      <div className="row">
+                        <div className="col-12 mb-2">
+                          <div
+                            onClick={() => handleClick(single.pk)}
+                            className="button"
+                          >
+                            <i className="fa fa-envelope"></i> Show services
                           </div>
                         </div>
                       </div>
@@ -139,21 +139,13 @@ const ServiceProviders = () => {
                   Next
                 </button>
               </div>
-            </>
+            </React.Fragment>
           )}
-        </>
+        </React.Fragment>
       ) : (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            margin: "15% auto",
-          }}
-        >
-          {" "}
-          <Spinner />
-        </div>
+        <Spinner />
       )}
+      <Toast />
     </div>
   );
 };
